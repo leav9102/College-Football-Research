@@ -1,0 +1,79 @@
+---
+title: "DataAppendix"
+format: pdf
+editor: visual
+editor_options: 
+  chunk_output_type: console
+---
+
+## Import packages
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(skimr)
+library(dplyr)
+```
+
+## Read in table
+
+```{r}
+football <- readxl::read_excel("football.xlsx")
+skim(football)
+```
+
+## Variables
+
+No missing values in any column.
+
+Team is type chr string of the college/team name. Every FBS school is included here.
+
+Conference might be a variable that we want, but it likely doesn't have too much of an effect. Type chr string for each school.
+
+Wins contains the number of wins a team had last season. Has type integer with range 0-16, which makes sense.
+
+winPer is the win percentage of a team last season. This might be more helpful than wins because some stats may be skewed one way or another if a team played more or less games than another. Its a numeric value with range 0-1, which makes sense. No missing values.
+
+Points_per_game is the amount of points per game a team scores. This also is better than total points for the same reason. This is a numeric value with range 10-50, which makes sense too.
+
+Avg_points_per_game_allowed is the same as points per game, but for the opposing teams a team has played. This is a numeric value with range 10-45, so this makes sense.
+
+Off_yards/play is also numeric, and has range 3.5-7.5, which is valid. This is the amount of offensive yards per play a team has.
+
+Yards/play_allowed is the same as Off_yards/play but for defense. Numeric with range 3.5-7.5.
+
+Penalty_Yards_per_game could be important because more disciplined teams might be more capable of winning games. This is also a numeric with range 25-80, which makes sense.
+
+AvgTurnoverMarg could be very useful because teams who win, usually win the turnover battle. This is numeric with range -2-2, negative values being a negative margin, and vice versa.
+
+All of the variable types and ranges make a lot of sense to us, and there are no issues it seems.
+
+## Pressing issues
+
+1.  Separating team name and conference name, and removing spaces
+2.  Replacing all spaces in column names with underscores
+3.  Selecting columns we think we need and removing all others
+
+## Data Cleaning
+
+```{r}
+football <- football |>
+  mutate(AvgTurnoverMarg = Avg_Turnover_Margin_per_Game) |>
+  select(-Avg_Turnover_Margin_per_Game) |>
+  separate_wider_delim(Team, names = c("TeamName", "conference"), delim = "(", too_many = "merge") |>
+  mutate(TeamName = str_replace_all(TeamName, "_", "")) |>
+  mutate(conference = str_replace_all(conference, "/", "_")) |>
+  rename_all(~str_replace_all(., "/", "_per_")) |>
+  mutate(conference = str_remove_all(conference, "\\)")) |>
+  select(TeamName, conference, Wins, winPer, Points_Per_Game, Avg_Points_per_Game_Allowed, Penalty_Yards_Per_Game, AvgTurnoverMarg, Off_Yards_per_Play, Yards_per_Play_Allowed)
+```
+
+## Skim
+
+```{r}
+skim(football)
+```
+
+There are no missing values, and the number of variables is now 8, which is much more manageable. These are also the exact variables that should be relevant to predicting wins or win percentage.
+
+Everything seems to have worked, and they are in our desirable data types.
